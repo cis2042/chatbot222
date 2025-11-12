@@ -1,8 +1,9 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { GoogleGenAI, Chat } from '@google/genai';
 import { ChatMessage, ChatRole } from '../types';
 import Spinner from './icons/Spinner';
+import MicrophoneIcon from './icons/MicrophoneIcon';
+import useVoiceRecognition from '../hooks/useVoiceRecognition';
 
 const Chatbot: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -12,6 +13,14 @@ const Chatbot: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const chatRef = useRef<Chat | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const {
+    isListening,
+    transcript,
+    startListening,
+    stopListening,
+    hasRecognitionSupport,
+  } = useVoiceRecognition();
 
   useEffect(() => {
     const initChat = () => {
@@ -25,8 +34,25 @@ const Chatbot: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    if (transcript) {
+      setInput(transcript);
+    }
+  }, [transcript]);
+
+  const handleMicClick = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
   const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isListening) {
+      stopListening();
+    }
     if (!input.trim() || isLoading || !chatRef.current) return;
 
     const userMessage: ChatMessage = { role: ChatRole.User, text: input };
@@ -45,7 +71,7 @@ const Chatbot: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading]);
+  }, [input, isLoading, isListening, stopListening]);
 
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto h-[calc(100vh-150px)] bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
@@ -79,22 +105,35 @@ const Chatbot: React.FC = () => {
         </div>
       </div>
       <div className="p-4 bg-gray-900/50 border-t border-gray-700">
-        <form onSubmit={handleSendMessage} className="flex items-center gap-4">
+        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
+            placeholder={isListening ? "Listening..." : "Type your message..."}
             className="flex-grow bg-gray-700 border border-gray-600 rounded-full py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
             disabled={isLoading}
           />
+          {hasRecognitionSupport && (
+            <button
+              type="button"
+              onClick={handleMicClick}
+              className={`p-3 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500 ${
+                isListening ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-600 text-white hover:bg-gray-500'
+              }`}
+              aria-label={isListening ? 'Stop listening' : 'Start listening'}
+            >
+              <MicrophoneIcon className="h-6 w-6" />
+            </button>
+          )}
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
             className="bg-green-600 text-white rounded-full p-3 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500"
+            aria-label="Send message"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
             </svg>
           </button>
         </form>

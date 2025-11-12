@@ -1,5 +1,7 @@
 {
   "name": "Gemini Garden & Chat Assistant",
   "description": "An AI-powered application that features a gardening assistant to identify plants from photos and provide care instructions, alongside a general-purpose chatbot for answering questions.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

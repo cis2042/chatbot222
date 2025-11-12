@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Part } from "@google/genai";
 
 const API_KEY = process.env.API_KEY;
@@ -27,11 +26,13 @@ const fileToGenerativePart = async (file: File): Promise<Part> => {
   };
 };
 
-export const analyzePlant = async (imageFile: File): Promise<string> => {
+export const analyzePlant = async (imageFile: File, customPrompt?: string): Promise<string> => {
   try {
     const imagePart = await fileToGenerativePart(imageFile);
+    const defaultPrompt = "Identify the plant in this image. Provide its common and scientific names. Then, give detailed care instructions including watering, sunlight, soil, and fertilizer needs. Format the response clearly using markdown.";
+    
     const textPart = {
-        text: "Identify the plant in this image. Provide its common and scientific names. Then, give detailed care instructions including watering, sunlight, soil, and fertilizer needs. Format the response clearly."
+        text: customPrompt && customPrompt.trim() ? customPrompt : defaultPrompt
     };
     
     const response = await ai.models.generateContent({
